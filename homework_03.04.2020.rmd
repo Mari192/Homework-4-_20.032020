@@ -1,0 +1,123 @@
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+install.packages('rvest')    # install 'rvest' library in R; library and package are synonyms
+install.packages('tidyverse')
+install.packages("progress")
+```
+
+У робочому середовищі або скрипті треба імпортувати необхідні бібліотеки:
+```{r setup, include=FALSE}
+library(rvest)    # a library for web web scraping
+library(tidyverse)
+library(progress)
+```
+
+```{r}
+url <- "https://www.marykay.ua/uk-ua/products/makeup/face"
+content <- read_html(url)
+content
+```
+
+```{r}
+url_template <- "https://www.marykay.ua/uk-ua/products/makeup/face?page-"
+
+adreses <- str_c(url_template,c(1:5))
+npages <- 5
+
+```
+
+Спробуємо вибрати рядки з таблиці
+
+```{r}
+content %>%
+  html_nodes('a.product-name') %>%
+  html_text()
+
+```
+Поки не дуже гарно, весь зміст рядка "злипся", інформація не структурована так, як ми хочемо.  
+
+Виберемо лише заголовки та дати, використаємо для цього CSS-селектори за допомогою атрибутів.
+```{r}
+titles <- content %>%
+  html_nodes('a.product-name') %>%
+  html_text() %>%
+  str_trim()
+titles
+
+```
+
+```{r}
+prices <- content %>%
+  html_nodes('p.price') %>%
+  html_text() %>%
+  str_trim()
+
+prices
+```
+
+Супер, маємо дані! Пора зробити з них таблицю — `data.frame` — і зберегти її. 
+```{r}
+df <- data.frame(titles = titles, prices = prices)
+# синтаксис: data.frame(назва_колонки = назва_вектора_значень, ще_одна_колонка=…)
+
+write.csv(df, "cosmetic.csv", row.names = FALSE)    # записали дані в форматі .csv
+# Файл з даними буде у тій же папці, де збережено ноутбук
+```
+Як прочитати csv
+```{r}
+read.csv("cosmetic.csv")
+```
+```{r}
+npages <- 5
+
+prices <- c()
+titles <- c()
+links <- c()
+
+url_template <- "https://www.marykay.ua/uk-ua/products/makeup/face?pages-"
+```
+
+Візьмемо перші 50 сторінок. Всередині цикла те саме, що ми робили з першою сторінкою
+```{r}
+for (page in adreses) {
+   
+  content <- read_html(page)
+  
+  titles <- content %>%
+    html_nodes('a.product-name') %>%
+    html_text() %>%
+    str_trim() %>%
+    c(titles, .)    
+  
+  prices <- content %>%
+    html_nodes('p.price') %>%
+    html_text() %>%
+    str_trim()  %>%
+    c(prices, .)
+  
+  links <- content %>%
+    html_nodes('a.product-name') %>%
+    html_attr("href") %>%
+    c(links, .)
+  
+  # Ще один важливий крок: затримка між запитами, щоб не зробити DDoS-атаку на сайт
+  Sys.sleep(2)    # 2 секунди програма буде "спати" 
+  
+}
+```
+
+```{r}
+# датафрейм через пайп одразу йде на зберігання
+data.frame(title = titles,
+           price = prices,
+           link = links) %>%
+write.csv("cosmetic.csv",
+            row.names = FALSE) # щоб не зберігати непотрібну колонку номерів рядків
+```
+
+Прочитаємо датафрейм, який щойно зберегли:
+```{r}
+df <- read.csv("cosmetic.csv")
+df
+```
+Відскрейпили.
