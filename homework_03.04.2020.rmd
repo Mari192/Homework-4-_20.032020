@@ -18,14 +18,6 @@ content <- read_html(url)
 content
 ```
 
-```{r}
-url_template <- "https://www.marykay.ua/uk-ua/products/makeup/face?page-"
-
-adreses <- str_c(url_template,c(1:5))
-npages <- 5
-
-```
-
 Спробуємо вибрати рядки з таблиці
 
 ```{r}
@@ -68,13 +60,12 @@ write.csv(df, "cosmetic.csv", row.names = FALSE)    # записали дані 
 read.csv("cosmetic.csv")
 ```
 ```{r}
-npages <- 5
-
 prices <- c()
 titles <- c()
 links <- c()
 
-url_template <- "https://www.marykay.ua/uk-ua/products/makeup/face?pages-"
+url_template <- "https://www.marykay.ua/uk-ua/products/makeup/face?page="
+adreses <- str_c(url_template, c(1:5))
 ```
 
 Візьмемо перші 50 сторінок. Всередині цикла те саме, що ми робили з першою сторінкою
